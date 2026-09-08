@@ -541,13 +541,21 @@ public class AIService {
                     return "Erro: lista de arquivos vazia.";
 
                 int count = 0;
+                StringBuilder errors = new StringBuilder();
                 for (Map<String, Object> f : files) {
                     String path = (String) f.get("path");
                     String content = (String) f.get("content");
                     if (path != null && content != null) {
-                        treeSessionService.updateFileContent(sessionId, path, content);
-                        count++;
+                        try {
+                            treeSessionService.updateFileContent(sessionId, path, content);
+                            count++;
+                        } catch (Exception e) {
+                            errors.append("\n- ").append(path).append(": ").append(e.getMessage());
+                        }
                     }
+                }
+                if (errors.length() > 0) {
+                    return count + " arquivos criados/atualizados com sucesso. Avisos:" + errors.toString();
                 }
                 return count + " arquivos criados/atualizados com sucesso!";
             } else if ("read_file".equals(name)) {
