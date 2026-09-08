@@ -277,7 +277,7 @@ public class TreeSessionService {
         TreeNode root = loadRootAndMigrateIfNeeded(s);
         List<String> parts = splitPath(path);
         if (parts.isEmpty()) throw new IllegalArgumentException("Não pode criar root");
-        TreeNode parent = findParent(root, parts);
+        TreeNode parent = ensureFolder(root, parts.subList(0, Math.max(0, parts.size() - 1)));
         String name = parts.get(parts.size()-1);
         // check duplicate
         if (parent.getChildren()!=null && parent.getChildren().stream().anyMatch(c -> c.getName().equals(name))) {
@@ -304,7 +304,7 @@ public class TreeSessionService {
         }
 
         TreeNode root = loadRootAndMigrateIfNeeded(s);
-        TreeNode parent = findParent(root, parts);
+        TreeNode parent = ensureFolder(root, parts.subList(0, Math.max(0, parts.size() - 1)));
         String name = parts.isEmpty() ? "" : parts.get(parts.size() - 1);
         Optional<TreeNode> node = findChild(parent, name);
         if (node.isEmpty()) {

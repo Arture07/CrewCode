@@ -20,6 +20,23 @@ export default function RecursiveTree({ root, selectedPath, onSelectFile, onMove
 	const [lastClicked, setLastClicked] = useState(null);
 	const [dragOverPath, setDragOverPath] = useState(null);
 
+	// Auto-expand parent folders of selectedPath so active file is always visible
+	React.useEffect(() => {
+		if (!selectedPath) return;
+		const parts = selectedPath.split('/');
+		if (parts.length > 1) {
+			setExpanded(prev => {
+				const next = new Set(prev);
+				let current = '';
+				for (let i = 0; i < parts.length - 1; i++) {
+					current = current ? `${current}/${parts[i]}` : parts[i];
+					next.add(current);
+				}
+				return next;
+			});
+		}
+	}, [selectedPath]);
+
 	// Helper to sort tree items: Folders first, then files, both alphabetically (case-insensitive)
 	const sortNodes = useCallback((nodes) => {
 		if (!Array.isArray(nodes)) return [];
