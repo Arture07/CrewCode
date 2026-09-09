@@ -78,7 +78,7 @@ public class TerminalService {
     /**
      * Starts a real PTY-backed bash process for the given session and terminal ID.
      */
-    public synchronized void startProcess(String sessionId, String terminalId, int cols, int rows) {
+    public synchronized void startProcess(String sessionId, String terminalId, int cols, int rows, String clientId, boolean needReplay) {
         validateSessionId(sessionId);
         String key = makeKey(sessionId, terminalId);
         String topic = makeTopic(sessionId, terminalId);
@@ -91,14 +91,16 @@ public class TerminalService {
                         existing.setWinSize(new WinSize(cols, rows));
                     } catch (Exception ignored) {}
                 }
-                // Replay recent output buffer so new/reloaded subscribers see the prompt & history
-                StringBuilder cached = outputBuffers.get(key);
-                if (cached != null && cached.length() > 0) {
-                    synchronized (cached) {
-                        messagingService.convertAndSend(topic, cached.toString());
+                // Only replay cached buffer to the specific client that requested it, NEVER to the public broadcast topic
+                if (needReplay && clientId != null && !clientId.trim().isEmpty()) {
+                    String tId = (terminalId == null || terminalId.trim().isEmpty()) ? "main" : terminalId.trim();
+                    String replayTopic = "/topic/terminal.replay/" + sessionId + "/" + tId + "/" + clientId.trim();
+                    StringBuilder cached = outputBuffers.get(key);
+                    if (cached != null && cached.length() > 0) {
+                        synchronized (cached) {
+                            messagingService.convertAndSend(replayTopic, cached.toString());
+                        }
                     }
-                } else {
-                    handleInput(sessionId, terminalId, "\r");
                 }
                 return; // PTY process already running
             } else {
@@ -294,6 +296,10 @@ public class TerminalService {
         outputBuffers.remove(key);
         messagingService.convertAndSend(topic, "\r\n\u001b[2J\u001b[H\u001b[1;36m[Reiniciando Terminal...]\u001b[0m\r\n");
         startProcess(sessionId, terminalId, cols, rows);
+    }
+
+    public synchronized void startProcess(String sessionId, String terminalId, int cols, int rows) {
+        startProcess(sessionId, terminalId, cols, rows, null, false);
     }
 
     public void startProcess(String sessionId, int cols, int rows) {

@@ -395,6 +395,8 @@ public class SyncController {
             @Payload(required = false) Map<String, Object> payload) {
         int cols = 80;
         int rows = 24;
+        String clientId = null;
+        boolean needReplay = false;
         if (payload != null) {
             Object c = payload.get("cols");
             Object r = payload.get("rows");
@@ -402,9 +404,15 @@ public class SyncController {
                 cols = ((Number) c).intValue();
             if (r instanceof Number)
                 rows = ((Number) r).intValue();
+            Object cid = payload.get("clientId");
+            if (cid instanceof String)
+                clientId = (String) cid;
+            Object nr = payload.get("needReplay");
+            if (nr instanceof Boolean)
+                needReplay = (Boolean) nr;
         }
         String tId = (terminalId != null && !terminalId.trim().isEmpty()) ? terminalId : "main";
-        terminalService.startProcess(sessionId, tId, cols, rows);
+        terminalService.startProcess(sessionId, tId, cols, rows, clientId, needReplay);
     }
 
     @MessageMapping("/terminal.resize/{sessionId}")
