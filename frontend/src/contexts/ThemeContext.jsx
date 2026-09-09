@@ -15,10 +15,10 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(
-    localStorage.getItem("crewcode-theme") || localStorage.getItem("codesync-theme") || localStorage.getItem("teamcode-theme") || "neobrutalism-dark",
+    localStorage.getItem("crewcode-theme") || "neobrutalism-dark",
   );
   const [fontSize, setFontSize] = useState(
-    Number(localStorage.getItem("crewcode-font-size") || localStorage.getItem("codesync-font-size") || localStorage.getItem("teamcode-font-size")) || 14,
+    Number(localStorage.getItem("crewcode-font-size")) || 14,
   );
 
   useEffect(() => {

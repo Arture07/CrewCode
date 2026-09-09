@@ -44,7 +44,7 @@ export default function GitPanel({
 
   // Advanced Git & Auth states
   const [gitToken, setGitToken] = useState(() => {
-    return localStorage.getItem("crewcode-git-token") || localStorage.getItem("codesync-git-token") || "";
+    return localStorage.getItem("crewcode-git-token") || "";
   });
   const [showGitToken, setShowGitToken] = useState(false);
   const [tokenModalOpen, setTokenModalOpen] = useState(false);

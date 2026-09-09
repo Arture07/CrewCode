@@ -78,7 +78,7 @@ export default function LandingPage({ onOpenAuth, ThemeSwitcher }) {
               Terminal PTY
             </a>
             <a href="#ia" className="hover:opacity-75 transition-opacity" style={{ color: "var(--text-color)" }}>
-              CodeSync AI
+              CrewCode AI
             </a>
             <a href="#arquitetura" className="hover:opacity-75 transition-opacity" style={{ color: "var(--text-color)" }}>
               Arquitetura

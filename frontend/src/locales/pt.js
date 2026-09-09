@@ -168,7 +168,7 @@ export default {
     noCommits: "Nenhum commit registrado nesta branch",
   },
   ai: {
-    agentTitle: "CodeSync Agent",
+    agentTitle: "CrewCode Agent",
     agentBadge: "Multi-File",
     visitorBadge: "Visitante (10 msgs/dia)",
     visitorQuotaTooltip: "Cota diária gratuita para visitantes: 10 mensagens",
@@ -254,7 +254,7 @@ export default {
     featureColabDesc: "Sincronização instantânea de digitação, presença remota de cursores coloridos, seleção e status em tempo real.",
     featureTerminalTitle: "Terminal PTY Linux Completo",
     featureTerminalDesc: "Execute node, python, git, npm ou qualquer comando Linux diretamente em contêineres Docker isolados com WebSocket.",
-    featureAiTitle: "CodeSync AI Agent",
+    featureAiTitle: "CrewCode AI Agent",
     featureAiDesc: "Assistente inteligente com suporte a edição multi-arquivo, geração de código, revisão de diffs e visão computacional.",
     featureGitTitle: "Git Integrado com Graph Visual",
     featureGitDesc: "Gerenciamento completo de branches, staging de arquivos, commits, pull/push e visualizador gráfico de commits.",
@@ -266,7 +266,7 @@ export default {
     orLoginWith: "ou conecte com",
   },
   auth: {
-    titleLogin: "Entrar no CodeSync",
+    titleLogin: "Entrar no CrewCode",
     titleRegister: "Criar Conta Gratuita",
     tabLogin: "Entrar",
     tabRegister: "Cadastrar",

@@ -4,11 +4,11 @@ import translations, { availableLanguages } from "../locales";
 
 export const LanguageContext = createContext();
 
-const STORAGE_KEY = "codesync-language";
+const STORAGE_KEY = "crewcode-language";
 
 const getInitialLanguage = () => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("crewcode-language");
+    const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && (saved === "pt" || saved === "en")) {
       return saved;
     }

@@ -181,21 +181,21 @@ export default function EditorPage({ sessionId }) {
   const terminalDragInfo = useRef(null);
   const [chatHeight, setChatHeight] = useState(() => {
     try {
-      const v = localStorage.getItem("crewcode-chat-height") || localStorage.getItem("codesync-chat-height") || localStorage.getItem("teamcode-chat-height");
+      const v = localStorage.getItem("crewcode-chat-height");
       if (v) return Number(v);
     } catch (_) { }
     return 220;
   });
   const [terminalHeight, setTerminalHeight] = useState(() => {
     try {
-      const v = localStorage.getItem("crewcode-terminal-height") || localStorage.getItem("codesync-terminal-height") || localStorage.getItem("teamcode-terminal-height");
+      const v = localStorage.getItem("crewcode-terminal-height");
       if (v) return Number(v);
     } catch (_) { }
     return 240;
   });
   const [terminalMinimized, setTerminalMinimized] = useState(() => {
     try {
-      const v = localStorage.getItem("crewcode-terminal-minimized") ?? localStorage.getItem("codesync-terminal-minimized") ?? localStorage.getItem("teamcode-terminal-minimized");
+      const v = localStorage.getItem("crewcode-terminal-minimized");
       return v === "1";
     } catch (_) {
       return false;
@@ -230,7 +230,7 @@ export default function EditorPage({ sessionId }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [yjsEnabled, setYjsEnabled] = useState(() => {
-    try { return (localStorage.getItem('crewcode-yjs-enabled') || localStorage.getItem('codesync-yjs-enabled') || localStorage.getItem('teamcode-yjs-enabled')) === '1'; } catch (_) { return false; }
+    try { return localStorage.getItem('crewcode-yjs-enabled') === '1'; } catch (_) { return false; }
   });
 
   const handleOpenAIModal = () => {
@@ -1124,7 +1124,7 @@ export default function EditorPage({ sessionId }) {
 
   useEffect(() => {
     if (sessionId) {
-      const saved = localStorage.getItem(`crewcode-chat-history-${sessionId}`) || localStorage.getItem(`codesync-chat-history-${sessionId}`) || localStorage.getItem(`teamcode-chat-history-${sessionId}`);
+      const saved = localStorage.getItem(`crewcode-chat-history-${sessionId}`);
       if (saved) {
         try {
           setMessages(JSON.parse(saved));

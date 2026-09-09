@@ -5,7 +5,7 @@ const DEFAULT_PANEL_SIZES = { left: 20, center: 55, right: 25 };
 export function usePanelResize(storageKey = 'crewcode-panel-sizes') {
   const [panelSizes, setPanelSizes] = useState(() => {
     try {
-      const raw = localStorage.getItem(storageKey) || localStorage.getItem('codesync-panel-sizes') || localStorage.getItem('teamcode-panel-sizes');
+      const raw = localStorage.getItem(storageKey);
       if (raw) return JSON.parse(raw);
     } catch (_) {}
     return DEFAULT_PANEL_SIZES;
