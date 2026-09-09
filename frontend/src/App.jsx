@@ -26,7 +26,7 @@ export default function App() {
   const searchParams = new URLSearchParams(window.location.search);
   const sessionId = searchParams.get("sessionId");
   const isAdminView = currentPath === "/admin" || searchParams.get("admin") === "true";
-  const isAuthView = showAuth || currentPath === "/login" || searchParams.get("auth") === "true";
+  const isAuthView = showAuth || currentPath === "/login" || searchParams.get("auth") === "true" || searchParams.has("code");
 
   return (
     <ToastProvider>
