@@ -10,6 +10,10 @@ function TerminalComponent({ sessionId, terminalId = "main", stompClient, regist
   const termInstance = useRef(null);
   const fitAddonRef = useRef(null);
   const stompClientRef = useRef(stompClient);
+  const hasStartedRef = useRef(false);
+  const clientIdRef = useRef(
+    "c_" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36)
+  );
   const { theme, fontSize } = useTheme();
 
   useEffect(() => {
@@ -189,7 +193,7 @@ function TerminalComponent({ sessionId, terminalId = "main", stompClient, regist
       },
       restart: () => {
         try {
-          termInstance.current?.clear();
+          termInstance.current?.reset();
           if (stompClient?.connected) {
             let cols = termInstance.current?.cols || 80;
             let rows = termInstance.current?.rows || 24;
@@ -213,6 +217,7 @@ function TerminalComponent({ sessionId, terminalId = "main", stompClient, regist
       resizeObserver.disconnect();
       onDataDisposable.dispose();
       term.dispose();
+      hasStartedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, terminalId]);
@@ -267,28 +272,71 @@ function TerminalComponent({ sessionId, terminalId = "main", stompClient, regist
     }
   }, [theme, fontSize]);
 
-  // 4. Initial start notification to backend
+  // 4. Initial start & replay notification to backend
   useEffect(() => {
-    if (stompClient?.connected) {
-      const timer = setTimeout(() => {
-        let cols = 80;
-        let rows = 24;
+    if (!stompClient?.connected) return;
+
+    const timer = setTimeout(() => {
+      let cols = 80;
+      let rows = 24;
+      try {
+        if (fitAddonRef.current && termInstance.current && terminalRef.current?.offsetWidth > 0) {
+          fitAddonRef.current.fit();
+          cols = termInstance.current.cols || 80;
+          rows = termInstance.current.rows || 24;
+        }
+      } catch (_) { }
+
+      const isFirstStart = !hasStartedRef.current;
+
+      if (isFirstStart) {
+        hasStartedRef.current = true;
+        const normTerminalId = (!terminalId || terminalId === "main" || terminalId === "1") ? "main" : terminalId;
+        const replayTopic = `/topic/terminal.replay/${sessionId}/${normTerminalId}/${clientIdRef.current}`;
+
+        let replaySub = null;
         try {
-          if (fitAddonRef.current && termInstance.current && terminalRef.current?.offsetWidth > 0) {
-            fitAddonRef.current.fit();
-            cols = termInstance.current.cols || 80;
-            rows = termInstance.current.rows || 24;
-          }
+          replaySub = stompClient.subscribe(replayTopic, (message) => {
+            try { replaySub?.unsubscribe(); } catch (_) { }
+            let content = message.body;
+            try {
+              const json = JSON.parse(message.body);
+              if (json && typeof json === "object" && "output" in json) {
+                content = json.output;
+              }
+            } catch (_) { }
+            if (content && termInstance.current) {
+              termInstance.current.reset();
+              termInstance.current.write(content);
+            }
+          });
         } catch (_) { }
+
         try {
           stompClient.publish({
             destination: getStartDestination(),
+            body: JSON.stringify({
+              cols,
+              rows,
+              clientId: clientIdRef.current,
+              needReplay: true,
+            }),
+          });
+        } catch (_) { }
+      } else {
+        // Reconnected after temporary disconnect / inactivity:
+        // Terminal is already mounted and running with output buffer intact,
+        // just update window size without requesting or broadcasting replay
+        try {
+          stompClient.publish({
+            destination: getResizeDestination(),
             body: JSON.stringify({ cols, rows }),
           });
         } catch (_) { }
-      }, 150);
-      return () => clearTimeout(timer);
-    }
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
   }, [stompClient?.connected, sessionId, terminalId]);
 
   return (

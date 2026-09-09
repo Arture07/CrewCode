@@ -105,6 +105,15 @@ export default function AIAssistantModal({
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("jwtToken");
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
   // Sync state if sessionId changes
   useEffect(() => {
     try {
@@ -125,15 +134,64 @@ export default function AIAssistantModal({
     } catch (_) { }
   }, [sessionId]);
 
+  // Asynchronously fetch chats from PostgreSQL backend whenever modal opens or sessionId changes
+  useEffect(() => {
+    if (!isOpen || !sessionId) return;
+    let isMounted = true;
+
+    const fetchChatsFromBackend = async () => {
+      try {
+        const res = await fetch(`/api/ai/chats?sessionId=${encodeURIComponent(sessionId)}`, {
+          headers: getAuthHeaders(),
+        });
+        if (!res.ok || !isMounted) return;
+        const remoteChats = await res.json();
+        if (Array.isArray(remoteChats) && remoteChats.length > 0 && isMounted) {
+          setChats(remoteChats);
+          try {
+            localStorage.setItem(getStorageKey(sessionId), JSON.stringify(remoteChats));
+          } catch (_) { }
+
+          setActiveChatId((currentId) => {
+            const validId = (currentId && remoteChats.some(c => c.id === currentId))
+              ? currentId
+              : remoteChats[0].id;
+
+            const activeObj = remoteChats.find(c => c.id === validId);
+            if (activeObj && Array.isArray(activeObj.messages) && activeObj.messages.length > 0) {
+              setMessages(activeObj.messages);
+            }
+            try {
+              localStorage.setItem(getActiveChatKey(sessionId), validId);
+            } catch (_) { }
+            return validId;
+          });
+        }
+      } catch (err) {
+        console.warn("Could not sync AI chats with database (using local cache):", err);
+      }
+    };
+
+    fetchChatsFromBackend();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId, isOpen]);
+
   const saveChatState = (newMessages, currentActiveId = activeChatId) => {
     setMessages(newMessages);
     if (!sessionId || !newMessages || newMessages.length === 0) return;
 
+    let targetId = currentActiveId;
+    let titleToSave = 'Novo Chat';
+
     setChats((prevChats) => {
-      let targetId = currentActiveId;
       let updatedChats;
 
       if (targetId && prevChats.some(c => c.id === targetId)) {
+        const currentChat = prevChats.find(c => c.id === targetId);
+        titleToSave = currentChat?.title || 'Novo Chat';
         updatedChats = prevChats.map(c =>
           c.id === targetId ? { ...c, messages: newMessages, updatedAt: Date.now() } : c
         );
@@ -141,10 +199,10 @@ export default function AIAssistantModal({
         // Create new conversation entry
         targetId = Date.now().toString();
         const firstUserMsg = newMessages.find(m => m.role === 'user');
-        const title = firstUserMsg
+        titleToSave = firstUserMsg
           ? (firstUserMsg.content.substring(0, 30) + (firstUserMsg.content.length > 30 ? '...' : ''))
           : 'Novo Chat';
-        const newChat = { id: targetId, title, messages: newMessages, updatedAt: Date.now() };
+        const newChat = { id: targetId, title: titleToSave, messages: newMessages, updatedAt: Date.now() };
         updatedChats = [newChat, ...prevChats];
         setActiveChatId(targetId);
         try {
@@ -155,6 +213,25 @@ export default function AIAssistantModal({
       try {
         localStorage.setItem(getStorageKey(sessionId), JSON.stringify(updatedChats));
       } catch (_) { }
+
+      // Persist to PostgreSQL backend in background
+      (async () => {
+        try {
+          await fetch('/api/ai/chats', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              id: targetId,
+              sessionId,
+              title: titleToSave,
+              messages: newMessages,
+            }),
+          });
+        } catch (err) {
+          console.warn('Failed to save AI chat to database:', err);
+        }
+      })();
+
       return updatedChats;
     });
   };
@@ -199,6 +276,18 @@ export default function AIAssistantModal({
         } catch (_) { }
       }
     }
+
+    // Delete from PostgreSQL database in background
+    (async () => {
+      try {
+        await fetch(`/api/ai/chats/${encodeURIComponent(chatId)}?sessionId=${encodeURIComponent(sessionId)}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+        });
+      } catch (err) {
+        console.warn('Failed to delete AI chat from database:', err);
+      }
+    })();
   };
 
   const handleFileSelect = (e) => {

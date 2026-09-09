@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,6 +28,9 @@ public class AIController {
 
     @Autowired
     private JwtTokenHelper jwtTokenHelper;
+
+    @Autowired
+    private com.codesync.sessionservice.service.AIChatService aiChatService;
 
     private String extractClientIp(HttpServletRequest request) {
         String xff = request.getHeader("X-Forwarded-For");
@@ -105,5 +109,42 @@ public class AIController {
         
         String response = aiService.executeTool(name, args, sessionId);
         return ResponseEntity.ok(new AIResponse(response));
+    }
+
+    @GetMapping("/chats")
+    public ResponseEntity<?> getChats(
+            @RequestParam(value = "sessionId", required = false) String sessionId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        UserTokenInfo userInfo = jwtTokenHelper.parseToken(authHeader);
+        String username = userInfo.isValid() ? userInfo.getUsername() : null;
+        List<Map<String, Object>> chats = aiChatService.getChatsForSession(sessionId, username);
+        return ResponseEntity.ok(chats);
+    }
+
+    @PostMapping("/chats")
+    public ResponseEntity<?> saveChat(
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        UserTokenInfo userInfo = jwtTokenHelper.parseToken(authHeader);
+        String username = userInfo.isValid() ? userInfo.getUsername() : null;
+
+        String chatId = (String) body.get("id");
+        if (chatId == null) {
+            chatId = (String) body.get("chatId");
+        }
+        String sessionId = (String) body.get("sessionId");
+        String title = (String) body.get("title");
+        Object messages = body.get("messages");
+
+        Map<String, Object> saved = aiChatService.saveOrUpdateChat(chatId, sessionId, username, title, messages);
+        return ResponseEntity.ok(saved);
+    }
+
+    @DeleteMapping("/chats/{chatId}")
+    public ResponseEntity<?> deleteChat(
+            @PathVariable("chatId") String chatId,
+            @RequestParam(value = "sessionId", required = false) String sessionId) {
+        aiChatService.deleteChat(chatId, sessionId);
+        return ResponseEntity.ok(Map.of("success", true, "deletedChatId", chatId));
     }
 }
